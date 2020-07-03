@@ -8,7 +8,7 @@ from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from posts.forms import PostForm
-from posts.models import Post, Group, Comment
+from posts.models import Post, Group, Comment, Follow
 
 User = get_user_model()
 
@@ -141,6 +141,35 @@ class YatubeTest(TestCase):
         self.assertEqual(comment.status_code, 302)
         self.assertEqual(comment_in_db.count(), 0)
 
+    def test_authorized_user_could_subscribe_unsubscribe(self):
+        test_user = User.objects.create_user(
+            username='Subscribed', email='rs2.s@skynet.com', password='qwerty123'
+        )
+        self.client.get(reverse('profile_follow', kwargs={'username': test_user.username}))
+        subscribed = Follow.objects.filter(user=self.user, author=test_user)
+        self.assertEqual(subscribed.count(), 1)
+
+    def test_user_post_in_following_feed(self):
+        post_text = "test_text"
+        user_post_text = "user post text"
+
+        test_user = User.objects.create_user(
+            username='Subscribed', email='rs2.s@skynet.com', password='qwerty123'
+        )
+        test_client = Client()
+        test_client.force_login(test_user)
+
+        Post.objects.create(text=post_text, author=test_user)
+        Post.objects.create(text=user_post_text, author=self.user)
+
+        self.client.get(reverse('profile_follow', kwargs={'username': test_user.username}))
+
+        response = self.client.get(reverse('follow_index'))
+        test_user_response = test_client.get(reverse('follow_index'))
+
+        self.assertNotContains(test_user_response, user_post_text)
+        self.assertContains(response, post_text)
+
 
 class YatubeTestCache(TestCase):
 
@@ -154,13 +183,10 @@ class YatubeTestCache(TestCase):
     def test_cache(self):
         response = self.client.get(reverse('index'))
         post_text = 'TestText'
-        post = self.client.post('/new/', {'author': self.user, 'text': post_text})
+        self.client.post('/new/', {'author': self.user, 'text': post_text})
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, post_text)
         cache.clear()
         response_new = self.client.get(reverse('index'))
         self.assertContains(response_new, post_text)
 
-
-# Авторизованный пользователь может подписываться на других пользователей и удалять их из подписок.
-# Новая запись пользователя появляется в ленте тех, кто на него подписан и не появляется в ленте тех, кто не подписан на него.
