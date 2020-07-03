@@ -1,28 +1,18 @@
-import io
+from io import BytesIO
 
-from unittest import mock
-
-from PIL.Image import Image
-from django.core.files import File
+from PIL import Image
+from django.core.cache import cache
 from django.core.files.images import ImageFile
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.forms import FileField
 from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from posts.forms import PostForm
-from posts.models import Post, Group
+from posts.models import Post, Group, Comment
 
 User = get_user_model()
 
 
-@override_settings(
-    CACHES={
-        'default': {
-            'BACKEND': 'django.core.cache.backends.dummy.DummyCache'
-        }
-    }
-)
 class YatubeTest(TestCase):
 
     def setUp(self):
@@ -31,15 +21,6 @@ class YatubeTest(TestCase):
             username='Osol', email='rs.s@skynet.com', password='qwerty123'
         )
         self.client.force_login(self.user)
-
-
-    def generate_photo_file(self):
-        file = io.BytesIO()
-        image = Image.new('RGBA', size=(100, 100), color=(155, 0, 0))
-        image.save(file, 'png')
-        file.name = 'test_img.png'
-        file.seek(0)
-        return file
 
     def check_pages_contains_post(self, post):
         list_urls = {
@@ -50,6 +31,14 @@ class YatubeTest(TestCase):
         for val in list_urls.values():
             resp = self.client.get(val)
             self.assertContains(resp, post.text)
+
+    def generate_image(self):
+        file = BytesIO()
+        image = Image.new('RGBA', size=(100, 100), color=(155, 0, 0))
+        image.save(file, 'png')
+        file.name = 'test.jpg'
+        file.seek(0)
+        return file
 
     def test_profile(self):
         response = self.client.get(reverse('profile', kwargs={'username': self.user}))
@@ -88,6 +77,7 @@ class YatubeTest(TestCase):
         self.check_pages_contains_post(post)
 
     def test_post_editing(self):
+        cache.clear()
         post_text = 'TestText'
         post_group = Group.objects.create(description='test_group', title='test', slug='test_slug')
         post = Post.objects.create(text=post_text, author=self.user, group=post_group)
@@ -104,64 +94,73 @@ class YatubeTest(TestCase):
             self.assertEqual(new_post.group, post_group)
             self.check_pages_contains_post(new_post)
 
-    # Для своего локального проекта напишите тест: возвращает ли сервер код 404, если страница не найдена.
     def test_404_page(self):
         response = self.client.get('1')
         self.assertEqual(response.status_code, 404)
 
-
     def test_img(self):
         post_text = 'TestText'
         post_group = Group.objects.create(description='test_group', title='test', slug='test_slug')
-        with open('posts/ойвсе.jpg', 'rb') as fp:
-            post = Post.objects.create(author=self.user, text=post_text, image=ImageFile(fp, 'image.jpg'), group=post_group)
+
+        file = self.generate_image()
+        post = Post.objects.create(author=self.user, text=post_text, image=ImageFile(file, 'test.jpg'), group=post_group)
+
         response = self.client.get(reverse('post_edit', kwargs={'username': self.user, 'post_id': post.id}))
-        # list_urls = [
-        #     # reverse('index'),
-        #     # reverse('profile', kwargs={'username': self.user}),
-        #     # reverse('group_posts', kwargs={'slug': post_group.slug})
-        #     reverse('post', kwargs={'username': self.user, 'post_id': post.id})
-        # ]
-        # # for val in list_urls:
-        #     # print(resp.content.decode('utf-8'))
-        #     # print(resp.status_code)
-        # resp = self.client.get(reverse('group_posts', kwargs={'slug': post_group.slug}))
-        # self.assertContains(resp, "<img src=")
         self.assertContains(response, "<img src=")
 
-    def test_no_graphic(self):
+    def test_img_display(self):
+        cache.clear()
         post_text = 'TestText'
-        with open('posts/static/not_img.txt', 'rb') as img:
-            post = self.client.post("<username>/<int:post_id>/edit/",
-                                    {'author': self.user, 'text': 'post with image', 'image': img})
-            response = self.client.get('self.user/1/edit/')
+        post_group = Group.objects.create(description='test_group', title='test', slug='test_slug')
+        file = self.generate_image()
+        post = Post.objects.create(author=self.user, text=post_text, image=ImageFile(file, 'test.jpg'),
+                                   group=post_group)
+        list_urls = [
+            reverse('index'),
+            reverse('profile', kwargs={'username': self.user}),
+            reverse('group_posts', kwargs={'slug': post_group.slug}),
+            reverse('post', kwargs={'username': self.user, 'post_id': post.id})
+        ]
+        for val in list_urls:
+            resp = self.client.get(val)
+            self.assertContains(resp, "<img")
 
-            print(response.context['form'].errors)
+    def test_no_graphic(self):
+        file = SimpleUploadedFile(content=b'test', name='test_file.txt')
+        post = self.client.post('/new/',
+                                {'author': self.user, 'text': 'the post does not contain an image', 'image': file})
+        form = PostForm(post)
+        self.assertFalse(form.is_valid())
+
+    def test_not_auth_user_cant_comment(self):
+        self.client.logout()
+        comment_text = 'TestText'
+        post = Post.objects.create(author=self.user, text='post_text')
+        comment = self.client.post(reverse('add_comment', args=[self.user.username, post.author_id]), data={'text': comment_text}, )
+        comment_in_db = Comment.objects.filter(text__exact=comment_text)
+        self.assertEqual(comment.status_code, 302)
+        self.assertEqual(comment_in_db.count(), 0)
 
 
+class YatubeTestCache(TestCase):
 
-        # image = SimpleUploadedFile(name='test.jpg', content=b'test', content_type='image/jpeg')
-        # test = self.client.post(reverse('new_post'), {'username': self.user, 'text': post_text, 'image': image}, follow=True)
-        # print(test)
-        # post = Post.objects.filter(author=self.user, text=post_text)
-    #     # with open('posts/static/not_img.txt', 'rb') as post_img:
-    #     #     post = Post.objects.create(text=post_text, author=self.user, group=post_group, image=post_img)
-    #     # self.assertTrue(post.image)
-    #     # self.assertContains(response, '<img')
-    #     # self.assertFormError(response=response,form=form, field=post_img, errors=errors, msg_prefix='')
-    #
-    # def test_cache(self):
-    #     response = respon(name='index')
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='Osol', email='rs.s@skynet.com', password='qwerty123'
+        )
+        self.client.force_login(self.user)
 
-# проверяют страницу конкретной записи с картинкой: на странице есть тег <img>
-# проверяют, что на главной странице, на странице профайла и на странице группы пост с картинкой отображается корректно, с тегом <img>
-# проверяют, что срабатывает защита от загрузки файлов не-графических форматов
-# Чтобы в тестах проверить загрузку файла на сервер, нужно отправить файл с помощью тестового клиента:
-# >>> with open('posts/file.jpg','rb') as img:
-# ...     post = self.client.post("<username>/<int:post_id>/edit/", {'author': self.user, 'text': 'post with image', 'image': img})
-# Подсказка
-# Для проверки защиты от загрузки «неправильных» файлов достаточно протестировать загрузку на одном «неграфическом» файле: тест покажет, срабатывает ли система защиты.
-# Напишите тесты, которые проверяют работу кэша.
+    def test_cache(self):
+        response = self.client.get(reverse('index'))
+        post_text = 'TestText'
+        post = self.client.post('/new/', {'author': self.user, 'text': post_text})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, post_text)
+        cache.clear()
+        response_new = self.client.get(reverse('index'))
+        self.assertContains(response_new, post_text)
+
+
 # Авторизованный пользователь может подписываться на других пользователей и удалять их из подписок.
 # Новая запись пользователя появляется в ленте тех, кто на него подписан и не появляется в ленте тех, кто не подписан на него.
-# Только авторизированный пользователь может комментировать посты.
