@@ -1,25 +1,25 @@
 {% extends 'base.html' %}
+
 {% block title %}Профиль автора {{ user.username }}{% endblock %}
 {% block header %}Профиль автора {{ user.username }}{% endblock %}
+
 {% block content %}
-
-
 
     <main role="main" class="container">
         <div class="row">
-            {% include 'userprofile.html' with posts_count=posts.count %}
+            {% include 'include/userprofile.html' with posts_count=posts.count %}
             <div class="col-md-9">
 
                 {% for post in page %}
-                    {% include 'one_post.html' with  post=post %}
+                    {% include 'include/one_post.html' with  post=post %}
                 {% endfor %}
 
                 {% if page.has_other_pages %}
-                    {% include 'paginator.html' with items=page paginator=paginator %}
+                    {% include 'include/paginator.html' with items=page paginator=paginator %}
                 {% endif %}
+
             </div>
         </div>
-
-
     </main>
+
 {% endblock %}

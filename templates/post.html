@@ -5,10 +5,10 @@
 
     <main role="main" class="container">
         <div class="row">
-            {% include 'userprofile.html' with author=author posts_count=posts.count %}
+            {% include 'include/userprofile.html' with author=author posts_count=posts.count %}
 
             <ul class="list-group list-group-flush">
-                <li class="list-group-item"> {% include 'one_post.html' with  posts_count=posts.count %}</li>
+                <li class="list-group-item"> {% include 'include/one_post.html' with  posts_count=posts.count %}</li>
                 <li class="list-group-item">
                     <div class="card-body">
                         <div class="card mb-3 mt-1 shadow-sm">
@@ -32,6 +32,7 @@
                                     </form>
                                 </div>
                             {% endif %}
+
                         </div>
                     </div>
                 </li>
@@ -40,23 +41,22 @@
                     <div class="card-body">
                         <div class="card mb-3 mt-1 shadow-sm">
                             Комментарии:
+
                             {% for comment in comments %}
                                 <div class="media mb-4">
                                     <div class="media-body">
                                         <h5 class="mt-0">
-                                            <a
-                                                    href="{% url 'profile' comment.author.username %}"
-                                                    name="comment_{{ comment.id }}"
+                                            <a href="{% url 'profile' comment.author.username %}"
+                                               name="comment_{{ comment.id }}"
                                             >{{ comment.author.username }}</a>
                                         </h5>
                                         {{ comment.text }}
                                     </div>
                                 </div>
                             {% endfor %}
+
                 </li>
             </ul>
         </div>
-
     </main>
-
 {% endblock %}

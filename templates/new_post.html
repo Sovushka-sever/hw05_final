@@ -1,51 +1,62 @@
 {% extends 'base.html' %}
-{% block title %}{% if is_edit %}Редактировать запись{% else %}Добавить запись{% endif %}{% endblock %}
+{% block title %}
+    {% if is_edit %}Редактировать запись{% else %}Добавить запись{% endif %}
+{% endblock %}
+
 {% block content %}
-
-
     {% load user_filters %}
-
-
     <div class="row justify-content-center">
     <div class="col-md-8 p-5">
         <div class="card">
+
             {% if is_edit %}
                 <div class="card-header">Редактировать запись</div>
             {% else %}
                 <div class="card-header">Добавить запись</div>
             {% endif %}
+
             <div class="card-body">
 
                 {% if form.errors %}
+
                     {% for error in form.errors %}
                         <div class="alert alert-danger" role="alert">
                             {{ error|escape }}
                         </div>
                     {% endfor %}
+
                 {% endif %}
 
                 <form method="post" enctype="multipart/form-data" action="
 
                         {% if is_edit %}{% url 'post_edit' post.author.username post.id %}{% else %}{% url 'new_post' %}{% endif %}">
+
                     {% csrf_token %}
+
                     {% for field in form %}
                         <div class="form-group row" aria-required={% if field.field.required %}"true"{% else %}"false"
                         {% endif %}>
+
                         <label for="{{ field.id_for_label }}" class="col-md-4 col-form-label text-md-right">
                             {{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}
                         </label>
+
                         <div class="col-md-6">
                             {{ field|addclass:'form-control' }}
+
                             {% if field.help_text %}
                                 <small id="{{ field.id_for_label }}-help"
                                        class="form-text text-muted">{{ field.help_text|safe }}</small>
                             {% endif %}
+
                         </div>
                     {% endfor %}
+
                     {% load thumbnail %}
                     {% thumbnail post.image "100x100" crop="center" as im %}
                         <img src="{{ im.url }}" width="{{ im.width }}" height="{{ im.height }}">
                     {% endthumbnail %}
+
                     {% if is_edit %}
                         <div class="col-md-6 offset-md-4">
                         <input type="submit" , value="Сохранить">
@@ -53,10 +64,10 @@
                         <div class="col-md-6 offset-md-4">
                         <input type="submit" , value="Добавить">
                     {% endif %}
+
                     </div>
                 </form>
             </div>
         </div>
     </div>
-
 {% endblock %}

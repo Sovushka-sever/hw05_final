@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Зарегистрироваться{% endblock %}
+
 {% block content %}
     {% load user_filters %}
-
-
     <div class="row justify-content-center">
         <div class="col-md-8 p-5">
             <div class="card">
@@ -11,13 +10,14 @@
                 <div class="card-body">
 
                     {% if form.errors %}
+
                         {% for error in form.errors %}
                             <div class="alert alert-danger" role="alert">
                                 {{ error|escape }}
                             </div>
                         {% endfor %}
-                    {% endif %}
 
+                    {% endif %}
 
                     <form method="post" action="{% url 'signup' %}">
                         {% csrf_token %}
@@ -30,10 +30,12 @@
                             </label>
                             <div class="col-md-6">
                                 {{ field|addclass:"form-control" }}
+
                                 {% if field.help_text %}
                                     <small id="{{ field.id_for_label }}-help"
                                            class="form-text text-muted">{{ field.help_text|safe }}</small>
                                 {% endif %}
+
                             </div>
                             </div>
                         {% endfor %}
@@ -44,9 +46,8 @@
                             </button>
                         </div>
                     </form>
-                </div> <!-- card body -->
-            </div> <!-- card -->
-        </div> <!-- col -->
-    </div> <!-- row -->
-
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}

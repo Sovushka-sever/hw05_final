@@ -4,18 +4,21 @@
 
 {% block content %}
     <div class="container">
-        {% include "menu.html" with index=True %}
+        {% include 'include/menu.html' with index=True %}
         <h1> Подписки </h1>
 
         {% load cache %}
         {% cache 20 index_page page %}
+
             {% for post in page %}
-                {% include 'one_post.html' with post=post %}
+                {% include 'include/one_post.html' with post=post %}
             {% endfor %}
+
         {% endcache %}
 
         {% if page.has_other_pages %}
-            {% include 'paginator.html' with items=page paginator=paginator %}
+            {% include 'include/paginator.html' with items=page paginator=paginator %}
         {% endif %}
+
     </div>
 {% endblock %}

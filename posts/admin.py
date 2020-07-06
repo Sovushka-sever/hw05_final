@@ -1,8 +1,4 @@
 from django.contrib import admin
-# from django.contrib.flatpages.admin import FlatPageAdmin
-# from django.contrib.flatpages.models import FlatPage
-# from ckeditor.widgets import CKEditorWidget
-# from django.db import models
 from .models import Post, Group, Comment
 
 
@@ -24,13 +20,6 @@ class CommentAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-# class FlatPageCustom(FlatPageAdmin):
-#     formfield_overrides = {
-#         models.TextField: {'widget': CKEditorWidget}
-#     }
-#
-
 admin.site.register(Post, PostAdmin)
 admin.site.register(Group, GroupAdmin)
 admin.site.register(Comment, CommentAdmin)
-

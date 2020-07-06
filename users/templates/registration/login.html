@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Войти{% endblock %}
+
 {% block content %}
     {% load user_filters %}
-
     <div class="row justify-content-center">
         <div class="col-md-8 p-5">
             <div class="card">
                 <div class="card-header">Войти на сайт</div>
                 <div class="card-body">
+
                     {% if form.errors %}
                         <div class="alert alert-danger" role="alert">
                             Имя пользователя и пароль не совпадают. Введите правильные данные.
@@ -29,6 +30,7 @@
                     <form method="post" action="{% url 'login' %}">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ next }}">
+
                         <div class="form-group row">
                             <label for="{{ form.username.id_for_label }}" class="col-md-4 col-form-label text-md-right">Имя
                                 пользователя</label>
