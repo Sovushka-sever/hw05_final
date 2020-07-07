@@ -19,18 +19,23 @@ class YatubeTest(TestCase):
         self.user = User.objects.create_user(
             username='Osol', email='rs.s@skynet.com', password='qwerty123'
         )
+        self.test_user = User.objects.create_user(
+            username='Subscribed',
+            email='rs2.s@skynet.com',
+            password='qwerty123'
+        )
         self.client.force_login(self.user)
 
     def check_pages_contains_post(self, post):
-        list_urls = {
-            'index': reverse('index'),
-            'profile': reverse('profile', kwargs={'username': self.user}),
-            'post': reverse(
+        list_urls = (
+            reverse('index'),
+            reverse('profile', kwargs={'username': self.user}),
+            reverse(
                 'post',
                 kwargs={'username': self.user, 'post_id': post.id}
             )
-        }
-        for url_value in list_urls.values():
+        )
+        for url_value in list_urls:
             with self.subTest(url_value=url_value):
                 resp = self.client.get(url_value)
                 self.assertContains(resp, post.text)
@@ -63,7 +68,7 @@ class YatubeTest(TestCase):
 
     def test_auth_user_can_new_publish(self):
         post_text = 'TestText'
-        post = self.client.post('/new/', {'text': post_text})
+        post = self.client.post(reverse('new_post'), {'text': post_text})
         posts_new = Post.objects.filter(
             author=self.user).filter(text__exact=post_text)
         self.assertIsInstance(posts_new[0], Post)
@@ -153,12 +158,12 @@ class YatubeTest(TestCase):
             image=ImageFile(file, 'test.jpg'),
             group=post_group
         )
-        list_urls = [
+        list_urls = (
             reverse('index'),
             reverse('profile', kwargs={'username': self.user}),
             reverse('group_posts', kwargs={'slug': post_group.slug}),
             reverse('post', kwargs={'username': self.user, 'post_id': post.id})
-        ]
+        )
         for url_value in list_urls:
             with self.subTest(url_value=url_value):
                 resp = self.client.get(url_value)
@@ -212,46 +217,42 @@ class YatubeTest(TestCase):
         self.assertTrue(self.user.is_authenticated)
         self.assertTrue(comment_in_db.exists())
 
-    def test_authorized_user_could_subscribe_unsubscribe(self):
-        test_user = User.objects.create_user(
-            username='Subscribed',
-            email='rs2.s@skynet.com',
-            password='qwerty123'
-        )
+    def test_authorized_user_could_subscribe(self):
         self.client.get(reverse(
             'profile_follow',
-            kwargs={'username': test_user.username})
+            kwargs={'username': self.test_user.username})
         )
-        subscribed = Follow.objects.filter(user=self.user, author=test_user)
-
+        subscribed = Follow.objects.filter(
+            user=self.user,
+            author=self.test_user
+        )
         self.assertEqual(subscribed.count(), 1)
 
+    def test_user_could_unsubscribe(self):
+        Follow.objects.create(author=self.test_user, user=self.user)
         self.client.get(reverse(
             'profile_unfollow',
-            kwargs={'username': test_user.username})
+            kwargs={'username': self.test_user.username})
         )
-        unsubscribed = Follow.objects.filter(user=self.user, author=test_user)
-
+        unsubscribed = Follow.objects.filter(
+            user=self.user,
+            author=self.test_user
+        )
         self.assertFalse(unsubscribed.exists())
 
     def test_user_post_in_following_feed(self):
         post_text = "test_text"
         user_post_text = "user post text"
 
-        test_user = User.objects.create_user(
-            username='Subscribed',
-            email='rs2.s@skynet.com',
-            password='qwerty123'
-        )
         test_client = Client()
-        test_client.force_login(test_user)
+        test_client.force_login(self.test_user)
 
-        Post.objects.create(text=post_text, author=test_user)
+        Post.objects.create(text=post_text, author=self.test_user)
         Post.objects.create(text=user_post_text, author=self.user)
 
         self.client.get(reverse(
             'profile_follow',
-            kwargs={'username': test_user.username})
+            kwargs={'username': self.test_user.username})
         )
 
         response = self.client.get(reverse('follow_index'))

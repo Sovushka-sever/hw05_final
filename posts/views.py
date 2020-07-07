@@ -52,12 +52,10 @@ def profile(request, username):
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
-    following = False
-    if request.user.is_authenticated and Follow.objects.filter(
+    following = request.user.is_authenticated and Follow.objects.filter(
             user=request.user,
             author=author
-    ).exists():
-        following = True
+    ).exists()
     return render(
         request,
         'profile.html',
@@ -120,7 +118,7 @@ def add_comment(request, username, post_id):
         return redirect('post', username=username, post_id=post_id)
     return render(
         request,
-        'comments.html',
+        'include/comments.html',
         {'form': form, 'post': post, 'comments': comments}
     )
 
@@ -152,10 +150,10 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
-    is_following = Follow.objects.filter(
-        author=author, user=request.user).exists()
-    if request.user != author and is_following:
-        Follow.objects.filter(author=author, user=request.user).delete()
+    following = Follow.objects.filter(
+        author=author, user=request.user)
+    if request.user != author and following.exists():
+        following.delete()
     return redirect('profile', username=author.username)
 
 

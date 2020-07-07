@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
-{% block title %} Новый комментарий {% endblock %}
+{% block title %}Добавление комментария{% endblock %}
+{% block header %}Добавление комментария{% endblock %}
+
 {% block content %}
 
     {% load user_filters %}
@@ -31,6 +33,8 @@
             </form>
         </div>
     {% endif %}
+
+    Комментарии:
 
     {% for comment in comments %}
         <div class="media mb-4">

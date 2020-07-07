@@ -88,4 +88,4 @@ class Follow(models.Model):
 
     class Meta:
         ordering = ['-created']
-        unique_together = ['user', 'author']
+        unique_together = ('user', 'author')
